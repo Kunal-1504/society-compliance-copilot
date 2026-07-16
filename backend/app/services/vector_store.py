@@ -451,13 +451,16 @@ async def _clean_with_gemini(raw_text: str, doc_name: str) -> str:
 
 
 def _normalize_whitespace(text: str) -> str:
-    """Lightweight local cleanup used when Gemini cleanup is skipped
-    (SKIP_GEMINI_CLEANUP=True). Collapses excess blank lines/spaces without
-    touching the actual extracted content."""
+    """Clean up OCR noise, normalize whitespace, and correct common hyphenations."""
     if not text:
         return ""
-    text = re.sub(r"[ \t]+\n", "\n", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
+    # Remove common OCR noise like standalone | or \ or •
+    text = re.sub(r'(?<=\s)[\\/|•*_—](?=\s)', '', text)
+    # Correct word hyphenations at line breaks (e.g. co- operative -> cooperative)
+    text = re.sub(r'(\b\w+)-\s*\n\s*(\w+\b)', r'\1\2', text)
+    # Remove multiple spaces/newlines
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
 
@@ -530,37 +533,85 @@ async def process_pages_with_gemini(pages: list[dict], doc_name: str) -> str:
 # Stage 3: Hybrid chunking
 # ============================================================
 def hybrid_chunk_markdown(markdown_with_markers: str) -> list[dict]:
-    header_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON, strip_headers=False)
-    sections = header_splitter.split_text(markdown_with_markers)
-
-    recursive_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-        separators=["\n\n", "\n", ". ", " ", ""],
-    )
-
+    # Split by paragraphs (\n\n) first
+    paragraphs = markdown_with_markers.split("\n\n")
+    
     chunks: list[dict] = []
+    current_chunk_parts = []
+    current_chunk_len = 0
     current_page = 1
-    for section in sections:
-        heading = next(iter(section.metadata.values()), None)
-        for sub in recursive_splitter.split_text(section.page_content):
-            page_hits = [int(p) for p in PAGE_MARKER_RE.findall(sub)]
-            page_start = page_hits[0] if page_hits else current_page
-            page_end = page_hits[-1] if page_hits else current_page
-            if page_hits:
-                current_page = page_hits[-1]
-
-            clean_content = PAGE_MARKER_RE.sub("", sub).strip()
-            if not clean_content:
-                continue
-            chunks.append(
-                {
-                    "content": clean_content,
-                    "section_heading": heading,
-                    "source_page_start": page_start,
-                    "source_page_end": page_end,
-                }
-            )
+    current_heading = None
+    
+    # Section pattern to detect a new legal section
+    # e.g., "Section 73", "कलम ७३", "12. Audit", "CHAPTER IV"
+    SECTION_RE = re.compile(
+        r"^\s*(?:Section|Sec\.|कलम|CHAPTER|प्रकरण)\s+(\d+|[IVXLCDM]+|[अ-ज्ञ]+)\b"
+        r"|^\s*(\d+\.\s+[A-Zअ-ज्ञ])"
+    , re.IGNORECASE)
+    
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+            
+        # Parse page numbers from this paragraph
+        page_hits = [int(p) for p in PAGE_MARKER_RE.findall(para)]
+        if page_hits:
+            current_page = page_hits[-1]
+            
+        # Strip page markers from the text for length calculation and storage
+        clean_para = PAGE_MARKER_RE.sub("", para).strip()
+        if not clean_para:
+            continue
+            
+        # Detect if this paragraph starts a new section or heading
+        starts_new_section = bool(SECTION_RE.search(clean_para)) or (len(clean_para) < 100 and clean_para.isupper())
+        
+        # If we have accumulated text, and we exceed chunk size or hit a new section, emit the chunk
+        if current_chunk_parts and (current_chunk_len + len(clean_para) > CHUNK_SIZE or starts_new_section):
+            content = "\n\n".join(current_chunk_parts)
+            # Find start and end page
+            chunk_page_hits = [int(p) for p in PAGE_MARKER_RE.findall(content)]
+            page_start = chunk_page_hits[0] if chunk_page_hits else current_page
+            page_end = chunk_page_hits[-1] if chunk_page_hits else current_page
+            
+            chunks.append({
+                "content": PAGE_MARKER_RE.sub("", content).strip(),
+                "section_heading": current_heading,
+                "source_page_start": page_start,
+                "source_page_end": page_end,
+            })
+            
+            # Start new chunk with overlap (if not starting a completely new section)
+            if not starts_new_section:
+                overlap_para = current_chunk_parts[-1]
+                current_chunk_parts = [overlap_para, para]
+                current_chunk_len = len(overlap_para) + len(para) + 2
+            else:
+                current_chunk_parts = [para]
+                current_chunk_len = len(para)
+        else:
+            current_chunk_parts.append(para)
+            current_chunk_len += len(para) + 2  # +2 for \n\n
+            
+        # Track heading
+        if len(clean_para) < 200 and (clean_para.startswith("#") or clean_para.isupper()):
+            current_heading = clean_para.lstrip("#").strip()
+            
+    # Emit final chunk
+    if current_chunk_parts:
+        content = "\n\n".join(current_chunk_parts)
+        chunk_page_hits = [int(p) for p in PAGE_MARKER_RE.findall(content)]
+        page_start = chunk_page_hits[0] if chunk_page_hits else current_page
+        page_end = chunk_page_hits[-1] if chunk_page_hits else current_page
+        
+        chunks.append({
+            "content": PAGE_MARKER_RE.sub("", content).strip(),
+            "section_heading": current_heading,
+            "source_page_start": page_start,
+            "source_page_end": page_end,
+        })
+        
     return chunks
 
 

@@ -34,7 +34,8 @@ export const ChatPage: React.FC = () => {
         role: 'assistant',
         content: response.answer,
         sources: response.sources,
-        language: response.language || detectLang(content)
+        language: response.language || detectLang(content),
+        debug: response.debug
       });
     } catch (error) {
       addMessage(activeChatId, {

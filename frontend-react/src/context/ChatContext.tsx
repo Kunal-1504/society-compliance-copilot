@@ -27,6 +27,7 @@ export interface Message {
   error?: boolean;
   language?: string;
   timestamp: number;
+  debug?: any;
 }
 
 export interface Chat {

@@ -15,6 +15,7 @@ export interface QueryResponse {
   }>;
   confidence: number;
   language?: string;
+  debug?: any;
 }
 
 export async function askQuestion(query: string): Promise<QueryResponse> {
@@ -47,10 +48,30 @@ export async function fetchDocuments() {
 
 // MOCK DATA FOR FEATURES WITHOUT BACKEND YET
 export const mockCalendarEvents = [
+  // May (Month - 2)
+  { id: 101, date: new Date(new Date().getFullYear(), new Date().getMonth() - 2, 12).toISOString(), title: 'Special General Body Meeting', type: 'meeting', status: 'completed' },
+  { id: 102, date: new Date(new Date().getFullYear(), new Date().getMonth() - 2, 22).toISOString(), title: 'Quarterly Accounts Audit', type: 'compliance', status: 'completed' },
+  
+  // June (Month - 1)
+  { id: 3, date: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 10).toISOString(), title: 'Fire Safety Drill', type: 'event', status: 'completed' },
+  { id: 103, date: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 25).toISOString(), title: 'Maintenance Dues Deadline', type: 'deadline', status: 'completed' },
+  
+  // July (Month)
+  { id: 4, date: new Date(new Date().getFullYear(), new Date().getMonth(), 5).toISOString(), title: 'Monthly MC Meeting', type: 'meeting', status: 'completed' },
   { id: 1, date: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString(), title: 'AGM Notice Deadline', type: 'deadline', status: 'pending' },
   { id: 2, date: new Date(new Date().getFullYear(), new Date().getMonth(), 28).toISOString(), title: 'Audit Report Submission', type: 'compliance', status: 'pending' },
-  { id: 3, date: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 10).toISOString(), title: 'Fire Safety Drill', type: 'event', status: 'completed' },
-  { id: 4, date: new Date(new Date().getFullYear(), new Date().getMonth(), 5).toISOString(), title: 'Monthly MC Meeting', type: 'meeting', status: 'completed' },
+  
+  // August (Month + 1)
+  { id: 104, date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 8).toISOString(), title: 'Independence Day Prep', type: 'event', status: 'pending' },
+  { id: 105, date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 20).toISOString(), title: 'Conveyance Deed Review', type: 'compliance', status: 'pending' },
+  
+  // September (Month + 2)
+  { id: 106, date: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 10).toISOString(), title: 'Monthly MC Meeting', type: 'meeting', status: 'pending' },
+  { id: 107, date: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 18).toISOString(), title: 'Structural Audit Submission', type: 'compliance', status: 'pending' },
+  { id: 108, date: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 30).toISOString(), title: 'Deemed Conveyance Filing', type: 'deadline', status: 'pending' },
+
+  // October (Month + 3)
+  { id: 109, date: new Date(new Date().getFullYear(), new Date().getMonth() + 3, 15).toISOString(), title: 'Half Yearly SGM Meeting', type: 'meeting', status: 'pending' }
 ];
 
 export const mockDashboardStats = {

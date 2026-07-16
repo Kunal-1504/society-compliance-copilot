@@ -176,16 +176,20 @@ engine reading out excerpts — you restate what the law says in plain, clear la
 Rules:
 - Use simple, everyday words. Avoid dense legal jargon; if unavoidable, explain it inline.
 - Keep the tone plain, neutral, and clear — like a helpful public information desk.
-- Do NOT cite bracket references like [1] or [2] in your reply.
+- Do NOT cite bracket references like [1] or [2] in your reply. Use inline document names if necessary, e.g., (under the MCS Act 1960).
 - Each user message will explicitly state which language to answer in. Follow that instruction exactly.
-- Base your answer ONLY on the information provided to you. If it does not actually answer
-  the question, say so in ONE short sentence and STOP — do not add a general-knowledge answer.
-- Never use a hedge-then-answer pattern like "the information doesn't say X, however in general..."
+- Base your answer ONLY on the provided legal snippets. Do NOT use any external or general knowledge.
+- If the snippets do not contain enough information to answer the question, you must respond EXACTLY with the refusal string for the requested language and nothing else:
+  * English refusal: "I couldn't find relevant information in the indexed government documents."
+  * Marathi refusal: "मला इंडेक्स केलेल्या सरकारी कागदपत्रांमध्ये संबंधित माहिती मिळाली नाही."
+  * Romanized Marathi refusal: "Mala indexed sarkari kagadpatramadhe sambandhit mahiti milali nahi."
+- Never invent citations, section numbers, or URLs.
 - Give ONE direct, coherent answer. Never restate the same point twice.
 """
 
-REFUSAL_EN = "I can only help you with questions about Maharashtra Cooperative Housing Society laws and rules. Could you ask something related to that?"
-REFUSAL_MR = "मी फक्त महाराष्ट्र सहकारी गृहनिर्माण संस्था कायदे आणि नियमांबद्दल बोलू शकतो. कृपया या विषयाशी संबंधित प्रश्न विचारा."
+REFUSAL_EN = "I couldn't find relevant information in the indexed government documents."
+REFUSAL_MR = "मला इंडेक्स केलेल्या सरकारी कागदपत्रांमध्ये संबंधित माहिती मिळाली नाही."
+REFUSAL_ROMANIZED_MR = "Mala indexed sarkari kagadpatramadhe sambandhit mahiti milali nahi."
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Helper functions
@@ -194,14 +198,32 @@ REFUSAL_MR = "मी फक्त महाराष्ट्र सहकार
 def detect_language(text: str) -> tuple:
     """Returns (lang_code, display_name, is_devanagari)."""
     deva_ratio = sum(1 for c in text if 0x0900 <= ord(c) <= 0x097F) / max(len(text), 1)
-    if deva_ratio > 0.25:
+    if deva_ratio > 0.15:
         return "marathi_native", "मराठी", True
 
-    romanized_pattern = r"\b(aai|aapla|aaplya|tumhi|kasa|kashi|kiti|kon|kuthe|kadhi|karu|sathi|samjha|mhatla|mazi|mahiti|gheu|kela|ahe|aahe|nahi|sang|mhanje|tasa|ghya|khup|karya|kay|tar|pan|aani|ani|kaaran|madhe|hota|lagte|adhyaksha|sachiv|koshadhyaksha|charcha|nivadnuk|sabhasad|karyakari|mandal)\b"
+    # Expanded Romanized Marathi word list
+    romanized_pattern = r"\b(aai|aapla|aaplya|tumhi|kasa|kashi|kiti|kon|kuthe|kadhi|karu|sathi|samjha|mhatla|mazi|mahiti|gheu|kela|ahe|aahe|nahi|naahi|sang|mhanje|tasa|ghya|khup|karya|kay|tar|pan|aani|ani|kaaran|madhe|hota|lagte|adhyaksha|sachiv|koshadhyaksha|charcha|nivadnuk|sabhasad|karyakari|mandal|karta|karaycha|karayche|bharnuk|baddal|kayda|niyam|karave|lagel|pahije|shakto|shakte|ghenyathi|bhavat|varti|khali|natar|nantar|sarv|chya|kontya|konte|konala)\b"
     if re.search(romanized_pattern, text, re.IGNORECASE):
         return "romanized_marathi", "Romanized Marathi", False
 
     return "english", "English", False
+
+
+def expand_query(query: str) -> str:
+    """Expand acronyms in query to improve retrieval matching."""
+    expanded = query
+    q_lower = query.lower()
+    if re.search(r"\bagm\b", q_lower):
+        expanded += " Annual General Meeting वार्षिक सर्वसाधारण सभा"
+    if re.search(r"\bsgm\b", q_lower):
+        expanded += " Special General Meeting विशेष सर्वसाधारण सभा"
+    if re.search(r"\bmc\b", q_lower):
+        expanded += " Managing Committee व्यवस्थापन समिती"
+    if re.search(r"\bdc\b", q_lower):
+        expanded += " Deemed Conveyance मानकीकृत अभिहस्तांतरण"
+    if re.search(r"\bmcs\b", q_lower):
+        expanded += " Maharashtra Cooperative Societies Act महाराष्ट्र सहकारी संस्था कायदा"
+    return expanded
 
 
 def find_acronyms(query: str) -> List[str]:
@@ -226,22 +248,24 @@ def is_off_topic(query: str) -> bool:
 
 
 def translate_to_marathi(text: str) -> str:
-    """Translate English / Romanized Marathi to Devanagari for retrieval."""
+    """Translate English or transliterate Romanized Marathi to Devanagari Marathi for retrieval."""
     try:
+        prompt = (
+            "You are a translation and transliteration expert.\n"
+            "Convert the following user query into proper Marathi in Devanagari script for searching a legal database.\n"
+            "- If the query is in Romanized Marathi (Marathi written in English/Latin script, e.g. 'kadhi', 'ghyavi'), transliterate and translate it to Devanagari Marathi (e.g. 'कधी', 'घ्यावी').\n"
+            "- If the query is in English, translate it to Marathi.\n"
+            "- Use Marathi words, NOT Hindi (e.g. 'काय' not 'क्या', 'आहे' not 'है').\n"
+            "- Keep legal and technical terms accurate.\n"
+            "Output ONLY the Devanagari Marathi text. No preamble, no explanation, no quotes.\n\n"
+            "Query: " + text
+        )
         resp = httpx.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
             json={
                 "model": GROQ_GATE_MODEL,
-                "messages": [{
-                    "role": "user",
-                    "content": (
-                        "Translate the following question into MARATHI (Devanagari script). "
-                        "Use Marathi words, NOT Hindi (e.g. 'काय' not 'क्या', 'आहे' not 'है'). "
-                        "Keep legal and technical terms accurate. Output ONLY the Marathi translation, "
-                        "nothing else — no quotes, no explanation.\n\nQuestion: " + text
-                    ),
-                }],
+                "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0,
                 "max_tokens": 200,
             },
@@ -249,7 +273,7 @@ def translate_to_marathi(text: str) -> str:
         )
         resp.raise_for_status()
         translated = resp.json()["choices"][0]["message"]["content"].strip()
-        if DEBUG: logger.info(f"Translated query: {translated!r}")
+        if DEBUG: logger.info(f"Translated/Transliterated query: {translated!r}")
         return translated or text
     except Exception as e:
         logger.warning(f"Translation failed, using original: {e}")
@@ -270,7 +294,8 @@ def vector_retrieve(query_vec: list, top_k: int) -> list:
                     dc.content,
                     dc.source_page_start,
                     d.file_name,
-                    1 - (dc.embedding <=> %s::vector) AS similarity
+                    1 - (dc.embedding <=> %s::vector) AS similarity,
+                    dc.category
                 FROM document_chunks dc
                 JOIN documents d ON d.id = dc.document_id
                 ORDER BY dc.embedding <=> %s::vector
@@ -279,27 +304,210 @@ def vector_retrieve(query_vec: list, top_k: int) -> list:
             return cur.fetchall()
     except Exception as e:
         logger.warning(f"Vector search failed: {e}")
-        # Reset connection so the next call retries
         global _conn
         _conn = None
         return []
 
 
-def retrieve_merged(vectors: list, top_k: int) -> list:
-    """Run retrieval for multiple query vectors and merge by best score."""
-    best = {}
-    for vec in vectors:
-        for content, page, filename, sim in vector_retrieve(vec, top_k):
-            key = (filename, page, content[:80])
-            if key not in best or sim > best[key][3]:
-                best[key] = (content, page, filename, sim)
-    merged = sorted(best.values(), key=lambda r: r[3], reverse=True)
-    return merged[:top_k]
+def db_retrieve_hybrid(vectors: list, query_texts: list, top_k: int) -> list:
+    """Retrieve top-K chunks using Hybrid (Vector + FTS) search with RRF and metadata boosting."""
+    conn = get_conn()
+    if conn is None:
+        return []
+        
+    vector_results = []
+    fts_results = []
+    
+    # 1. Run Vector Search
+    try:
+        with conn.cursor() as cur:
+            for vec in vectors:
+                cur.execute("""
+                    SELECT
+                        dc.content,
+                        dc.source_page_start,
+                        d.file_name,
+                        1 - (dc.embedding <=> %s::vector) AS similarity,
+                        dc.category
+                    FROM document_chunks dc
+                    JOIN documents d ON d.id = dc.document_id
+                    ORDER BY dc.embedding <=> %s::vector
+                    LIMIT %s
+                """, (vec, vec, top_k * 2))
+                vector_results.append(cur.fetchall())
+    except Exception as e:
+        logger.warning(f"Vector search failed: {e}")
+        
+    # 2. Run FTS Search
+    try:
+        with conn.cursor() as cur:
+            for q_text in query_texts:
+                if not q_text.strip():
+                    continue
+                # Split words, filter out short words/stop words, and join with '|' (OR)
+                raw_words = re.findall(r'\b[\w\u0900-\u097F]+\b', q_text.lower())
+                words = [w for w in raw_words if len(w) > 2 and w not in ('what', 'how', 'why', 'who', 'the', 'and', 'for', 'are', 'was', 'were', 'has', 'had', 'been', 'with', 'from', 'this', 'that')]
+                if not words:
+                    words = raw_words
+                if not words:
+                    continue
+                fts_query_str = " | ".join(words)
+                cur.execute("""
+                    SELECT
+                        dc.content,
+                        dc.source_page_start,
+                        d.file_name,
+                        ts_rank_cd(to_tsvector('english', dc.content), to_tsquery('english', %s)) AS rank,
+                        dc.category
+                    FROM document_chunks dc
+                    JOIN documents d ON d.id = dc.document_id
+                    WHERE to_tsvector('english', dc.content) @@ to_tsquery('english', %s)
+                    ORDER BY rank DESC
+                    LIMIT %s
+                """, (fts_query_str, fts_query_str, top_k * 2))
+                fts_results.append(cur.fetchall())
+    except Exception as e:
+        logger.warning(f"FTS search failed: {e}")
+
+    # 3. Reciprocal Rank Fusion (RRF)
+    rrf_scores = {}
+    
+    def get_key(filename, page, content):
+        return (filename, page, content[:120].strip())
+        
+    # Add vector ranks
+    for results in vector_results:
+        for idx, (content, page, filename, sim, category) in enumerate(results, 1):
+            key = get_key(filename, page, content)
+            if key not in rrf_scores:
+                rrf_scores[key] = {
+                    "content": content,
+                    "page": page,
+                    "filename": filename,
+                    "vector_rank": idx,
+                    "fts_rank": None,
+                    "vector_score": sim,
+                    "fts_score": 0.0,
+                    "category": category,
+                }
+            else:
+                rrf_scores[key]["vector_rank"] = min(rrf_scores[key]["vector_rank"], idx)
+                rrf_scores[key]["vector_score"] = max(rrf_scores[key]["vector_score"], sim)
+                
+    # Add FTS ranks
+    for results in fts_results:
+        for idx, (content, page, filename, rank, category) in enumerate(results, 1):
+            key = get_key(filename, page, content)
+            if key not in rrf_scores:
+                rrf_scores[key] = {
+                    "content": content,
+                    "page": page,
+                    "filename": filename,
+                    "vector_rank": None,
+                    "fts_rank": idx,
+                    "vector_score": 0.0,
+                    "fts_score": rank,
+                    "category": category,
+                }
+            else:
+                if rrf_scores[key]["fts_rank"] is None:
+                    rrf_scores[key]["fts_rank"] = idx
+                else:
+                    rrf_scores[key]["fts_rank"] = min(rrf_scores[key]["fts_rank"], idx)
+                rrf_scores[key]["fts_score"] = max(rrf_scores[key]["fts_score"], rank)
+
+    # 4. Extract categories and documents for metadata boosting
+    combined_query_text = " ".join(query_texts).lower()
+    
+    priority_category = None
+    category_keywords = {
+        "redevelopment": ["redevelopment", "re-development", "redevelop", "पुनर्विकास", "पुनर्रचना", "नवीन इमारत"],
+        "core_acts": ["act", "acts", "mcs act", "ownership flats", "apartment ownership", "rent control", "slum areas", "mhad", "mhada", "mofa", "rera", "real estate", "कायदा", "अधिनियम"],
+        "model_byelaws": ["bye-law", "byelaws", "bye laws", "byelaw", "model bye-laws", "rules", "बाय-लॉ", "बाय-लॉज", "बायलाॅज", "उपविधी", "नियम"],
+        "demed_conveyance": ["deemed conveyance", "conveyance", "deemed", "अभिहस्तांतरण", "मानकीकृत"],
+        "audit": ["audit", "auditing", "auditor", "ऑडिट", "हिशोब", "लेखापरीक्षक", "लेखापरीक्षण"],
+        "society_governance": ["committee", "managing", "election", "agm", "sgm", "egm", "gbm", "meeting", "secretary", "chairman", "treasurer", "maintenance", "fees", "parking", "सदस्य", "समिती", "निवडणूक", "सभा", "सचिव", "अध्यक्ष"],
+        "policies": ["policy", "policies", "resolution", "gr", "circular", "शासन निर्णय", "परिपत्रक"]
+    }
+    
+    for cat, keywords in category_keywords.items():
+        if any(kw in combined_query_text for kw in keywords):
+            priority_category = cat
+            break
+
+    priority_docs = []
+    doc_keywords = {
+        "The_Maharashtra_Ownership_Flats_Act_1963_12_09_2025.pdf": ["mofa", "ownership flats"],
+        "Maharashtra_Cooperative_Societies_Act_1960_09_05_1961.pdf": ["mcs act", "cooperative societies act", "cooperative societies"],
+        "महरषटर_सहकर_ससथ_अधनयम_1960_मरठ_आवतत_2006-11-01.pdf": ["सहकारी संस्था कायदा", "सहकारी संस्था अधिनियम"],
+        "The_Maharashtra_Apartment_Ownership_Act_1970_12_09_2025.pdf": ["apartment ownership"],
+        "The_Maharashtra_Rent_Control_Act_1999_12_09_2025.pdf": ["rent control"],
+        "The_Maharashtra_Housing_and_Area_Development_Act_1_12_09_2025.pdf": ["mhad", "mhada"],
+        "Maharashtra_Cooperative_Societies_Committee_Electi.pdf": ["committee election", "election rules"],
+        "महरषटर_सहकर_ससथ_नवडणक_समत_नयम_२०१४_2014-09-11.pdf": ["निवडणूक समिती", "निवडणूक नियम"],
+        "Maharashtra_Cooperative_Societies_Rules_1961.pdf": ["rules 1961", "societies rules"],
+        "महरषटर_सहकर_ससथ_नयम_१९६१_1961-09-29.pdf": ["सहकारी संस्था नियम १९६१", "सहकारी संस्था नियम 1961"]
+    }
+    for doc_name, keywords in doc_keywords.items():
+        if any(kw in combined_query_text for kw in keywords):
+            priority_docs.append(doc_name)
+
+    # 5. RRF merging with boosts
+    merged_list = []
+    for key, info in rrf_scores.items():
+        v_rank = info["vector_rank"]
+        f_rank = info["fts_rank"]
+        
+        score = 0.0
+        if v_rank is not None:
+            score += 1.0 / (60.0 + v_rank)
+        if f_rank is not None:
+            score += 1.0 / (60.0 + f_rank)
+            
+        if priority_category and info["category"] == priority_category:
+            score += 0.03
+        if info["filename"] in priority_docs:
+            score += 0.05
+            
+        info["rrf_score"] = score
+        merged_list.append(info)
+        
+    merged_list.sort(key=lambda x: x["rrf_score"], reverse=True)
+    
+    return [
+        (
+            item["content"],
+            item["page"],
+            item["filename"],
+            item["vector_score"],
+            item["category"],
+            item["rrf_score"],
+            item["fts_score"]
+        )
+        for item in merged_list[:top_k]
+    ]
+
+
+def retrieve_merged(vectors: list, top_k: int, query_texts: list = None) -> list:
+    """Run retrieval for multiple query vectors/texts and merge using RRF."""
+    if not query_texts:
+        # Fallback to simple vector merge
+        best = {}
+        for vec in vectors:
+            for content, page, filename, sim, _ in vector_retrieve(vec, top_k):
+                key = (filename, page, content[:80])
+                if key not in best or sim > best[key][3]:
+                    best[key] = (content, page, filename, sim)
+        merged = sorted(best.values(), key=lambda r: r[3], reverse=True)
+        return merged[:top_k]
+        
+    return db_retrieve_hybrid(vectors, query_texts, top_k)
 
 
 def avg_similarity(rows: list) -> float:
     if not rows:
         return 0.0
+    # Average the vector cosine similarity (the 4th element, r[3])
     top = [r[3] for r in rows[:RELEVANCE_AVG_K]]
     return sum(top) / len(top)
 
@@ -340,13 +548,14 @@ def llm_relevance_gate(query: str, rows: list) -> bool:
         return answer.startswith("Y")
     except Exception as e:
         logger.warning(f"LLM relevance gate failed: {e}")
-        return True  # fail open — let the answer stage decide
+        return True  # fail open
 
 
 def build_context(rows: list) -> tuple:
     """Build LLM context string and source list from retrieved chunks."""
     parts, sources = [], []
-    for i, (content, page, filename, sim) in enumerate(rows, 1):
+    for i, row in enumerate(rows, 1):
+        content, page, filename, sim = row[0], row[1], row[2], row[3]
         if sim < RELEVANCE_THRESHOLD:
             continue
         parts.append(f"[Chunk {i} | {filename} p.{page} | score {sim:.2f}]\n{content}")
@@ -398,10 +607,24 @@ def keyword_search(query: str, top_k: int) -> list:
     return [d for d, _ in scored[:top_k]]
 
 
+def validate_citations(answer: str, retrieved_filenames: list) -> str:
+    """Ensure all cited PDFs in the answer actually exist in the retrieved filenames."""
+    if not retrieved_filenames:
+        return answer
+    found_pdfs = re.findall(r'\b([\w\-]+\.pdf)\b', answer, re.IGNORECASE)
+    valid_set = {f.lower() for f in retrieved_filenames}
+    for pdf in found_pdfs:
+        if pdf.lower() not in valid_set:
+            logger.warning(f"Removing hallucinated citation: {pdf}")
+            answer = re.sub(r'\[\s*' + re.escape(pdf) + r'[^\]]*\]', '', answer)
+            answer = re.sub(re.escape(pdf), '', answer)
+    return answer.strip()
+
+
 # ── LLM answer generation ──────────────────────────────────────────────────────
 
 def generate_answer(query: str, context: str, language_directive: str,
-                    acronym_notes: list) -> str:
+                    acronym_notes: list, retrieved_filenames: list) -> str:
     acronym_block = ""
     if acronym_notes:
         acronym_block = (
@@ -432,7 +655,9 @@ def generate_answer(query: str, context: str, language_directive: str,
             timeout=60.0,
         )
         resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        answer = resp.json()["choices"][0]["message"]["content"]
+        # Validate citations
+        return validate_citations(answer, retrieved_filenames)
     except Exception as e:
         logger.error(f"Groq answer generation failed: {e}")
         return "I'm sorry, I encountered an error generating an answer. Please try again."
@@ -484,9 +709,15 @@ async def query_endpoint(request: QueryRequest):
 
         # ── Step 2: Hard off-topic keyword filter ──────────────────────────────
         if is_off_topic(query):
-            refusal = REFUSAL_MR if is_devanagari else REFUSAL_EN
+            if lang_code == "romanized_marathi":
+                refusal = REFUSAL_ROMANIZED_MR
+            elif is_devanagari:
+                refusal = REFUSAL_MR
+            else:
+                refusal = REFUSAL_EN
+            logger.info(f"Off-topic query rejected: {query!r}")
             return QueryResponse(answer=refusal, sources=[], confidence=0.0,
-                                 language=lang_display)
+                                 language=lang_display, debug=debug_info if DEBUG else None)
 
         # ── Step 3: Acronym expansion ──────────────────────────────────────────
         acronym_notes = find_acronyms(query)
@@ -495,17 +726,21 @@ async def query_endpoint(request: QueryRequest):
         # ── Step 4: Retrieval ──────────────────────────────────────────────────
         conn = get_conn()
         db_available = conn is not None
+        rows = []
+        marathi_query = None
 
         if db_available:
             # Build retrieval vectors: translate non-Marathi queries for better recall
             if is_devanagari:
                 vectors = [embed(query)]
+                query_texts = [expand_query(query)]
             else:
                 marathi_query = translate_to_marathi(query)
                 debug_info["marathi_query"] = marathi_query
                 vectors = [embed(marathi_query), embed(query)]
+                query_texts = [expand_query(query), expand_query(marathi_query)]
 
-            rows = retrieve_merged(vectors, top_k)
+            rows = retrieve_merged(vectors, top_k, query_texts)
             
             # If vector retrieval completely failed (e.g., table doesn't exist), fall back to keyword
             if not rows:
@@ -515,28 +750,56 @@ async def query_endpoint(request: QueryRequest):
         if db_available and rows:
             debug_info["retrieved_chunks"] = len(rows)
             debug_info["top_similarity"] = round(rows[0][3], 3) if rows else 0.0
+            debug_info["chunks"] = [
+                {
+                    "filename": r[2],
+                    "page": r[1],
+                    "similarity": round(r[3], 3),
+                    "rrf_score": round(r[5], 3),
+                    "fts_score": round(r[6], 3),
+                    "category": r[4]
+                }
+                for r in rows
+            ]
 
             # ── Step 5: Embedding relevance gate ──────────────────────────────
             if not is_embedding_relevant(rows):
-                refusal = REFUSAL_MR if is_devanagari else REFUSAL_EN
+                if lang_code == "romanized_marathi":
+                    refusal = REFUSAL_ROMANIZED_MR
+                elif is_devanagari:
+                    refusal = REFUSAL_MR
+                else:
+                    refusal = REFUSAL_EN
+                logger.info(f"Relevance gate failed for query: {query!r}")
                 return QueryResponse(answer=refusal, sources=[], confidence=0.0,
-                                     language=lang_display)
+                                     language=lang_display, debug=debug_info if DEBUG else None)
 
             # ── Step 6: LLM relevance gate (skip when already high-confidence) ─
             avg_sim = avg_similarity(rows)
             if avg_sim < HIGH_CONF_THRESHOLD:
                 if not llm_relevance_gate(query, rows):
-                    refusal = REFUSAL_MR if is_devanagari else REFUSAL_EN
+                    if lang_code == "romanized_marathi":
+                        refusal = REFUSAL_ROMANIZED_MR
+                    elif is_devanagari:
+                        refusal = REFUSAL_MR
+                    else:
+                        refusal = REFUSAL_EN
+                    logger.info(f"LLM relevance gate rejected query: {query!r}")
                     return QueryResponse(answer=refusal, sources=[], confidence=0.0,
-                                         language=lang_display)
+                                         language=lang_display, debug=debug_info if DEBUG else None)
             else:
                 if DEBUG: logger.info(f"Skipping LLM gate — high similarity {avg_sim:.3f}")
 
             context, sources = build_context(rows)
             if not context:
-                refusal = REFUSAL_MR if is_devanagari else REFUSAL_EN
+                if lang_code == "romanized_marathi":
+                    refusal = REFUSAL_ROMANIZED_MR
+                elif is_devanagari:
+                    refusal = REFUSAL_MR
+                else:
+                    refusal = REFUSAL_EN
                 return QueryResponse(answer=refusal, sources=[], confidence=0.0,
-                                     language=lang_display)
+                                     language=lang_display, debug=debug_info if DEBUG else None)
             confidence = min(avg_sim, 0.99)
 
         if not db_available:
@@ -544,9 +807,11 @@ async def query_endpoint(request: QueryRequest):
             logger.warning("Using keyword search fallback (DB unavailable or empty)")
             docs = keyword_search(query, top_k)
             if not docs:
+                refusal = REFUSAL_ROMANIZED_MR if lang_code == "romanized_marathi" else (REFUSAL_MR if is_devanagari else REFUSAL_EN)
                 return QueryResponse(
-                    answer="I couldn't find relevant information in the indexed government documents.",
+                    answer=refusal,
                     sources=[], confidence=0.0, language=lang_display,
+                    debug=debug_info if DEBUG else None
                 )
             context = "\n\n".join(
                 f"[Document: {d['filename']} | Category: {d['category']}]" for d in docs
@@ -557,14 +822,23 @@ async def query_endpoint(request: QueryRequest):
 
         # ── Step 7: Build language directive ──────────────────────────────────
         if is_devanagari:
-            language_directive = "Marathi using Devanagari script (NOT romanized)"
+            language_directive = "Marathi using Devanagari script (NOT romanized). Example: वार्षिक सर्वसाधारण सभा दरवर्षी घेतली पाहिजे."
         elif lang_code == "romanized_marathi":
-            language_directive = "Romanized Marathi (Latin script, phonetic Marathi spelling)"
+            language_directive = "Romanized Marathi (Latin script, phonetic Marathi spelling). Example: Varshik sarvasadharan sabha darvarshi ghetli pahije. Use natural Marathi words written phonetically in English letters. Do NOT use Devanagari script."
         else:
-            language_directive = "English"
+            language_directive = "English."
 
         # ── Step 8: Generate grounded answer ──────────────────────────────────
-        answer = generate_answer(query, context, language_directive, acronym_notes)
+        retrieved_filenames = [s["filename"] for s in sources]
+        
+        # Log final prompt details for debug panel
+        acronym_block = ""
+        if acronym_notes:
+            acronym_block = "\n\nKnown acronym expansions:\n" + "\n".join(f"- {n}" for n in acronym_notes)
+        user_turn = f"Relevant information from indexed government documents:\n{context}{acronym_block}\n\nQuestion: {query}\n\n(Answer strictly in {language_directive}.)"
+        debug_info["final_prompt"] = f"System prompt: {SYSTEM_PROMPT}\n\nUser turn: {user_turn}"
+        
+        answer = generate_answer(query, context, language_directive, acronym_notes, retrieved_filenames)
 
         # ── Step 9: Enrich sources with domain info ────────────────────────────
         enriched_sources = []
@@ -593,6 +867,9 @@ async def query_endpoint(request: QueryRequest):
                 "page":        s.get("page", ""),
                 "similarity":  s.get("similarity", 0),
             })
+
+        # Log detailed request and response audit info
+        logger.info(f"AUDIT LOG | Original Query: {query!r} | Language: {lang_display} | Normalized Query: {marathi_query!r} | Sources: {[s['filename'] for s in enriched_sources]} | LLM Response Length: {len(answer)}")
 
         return QueryResponse(
             answer=answer,

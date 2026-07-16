@@ -1,0 +1,21 @@
+# --- Database ---
+asyncpg==0.29.0
+pgvector==0.2.5              # numpy <-> vector(1024) conversion helpers
+
+# --- Digital text extraction ---
+pdfplumber==0.11.4
+
+# --- Vision OCR fallback (scanned pages) ---S
+opencv-python-headless==4.10.0.84
+
+# --- Cleanup layer (Gemini 2.5 Flash) ---
+httpx==0.27.2
+tenacity==9.0.0              # retry/backoff for flaky API calls
+
+# --- Embeddings ---
+sentence-transformers==3.1.1
+torch==2.4.1                 # CPU build; install CUDA build separately if you have a GPU
+
+# --- Chunking ---
+langchain-text-splitters==0.3.0   # RecursiveCharacterTextSplitter
+

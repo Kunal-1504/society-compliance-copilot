@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Government Housing Society Compliance Assistant</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            background: #ffffff;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: #f7f7f7;
+            border-right: 1px solid #d1d5db;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid #d1d5db;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px 16px;
+            background: #10a37f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: #0d8a6f;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .chat-item {
+            padding: 12px 16px;
+            margin: 4px 8px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+            transition: background 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            width: calc(100% - 16px);
+        }
+
+        .chat-item:hover {
+            background: #e5e5e5;
+        }
+
+        .chat-item.active {
+            background: #e5e5e5;
+            color: #10a37f;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #d1d5db;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #d1d5db;
+            background: #ffffff;
+        }
+
+        .chat-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .language-toggle {
+            display: flex;
+            gap: 8px;
+            background: #f0f0f0;
+            padding: 4px;
+            border-radius: 6px;
+        }
+
+        .lang-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: #10a37f;
+            color: white;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 80%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+            max-width: 80%;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: #10a37f;
+        }
+
+        .message.assistant .message-avatar {
+            background: #d1d5db;
+            color: #333;
+        }
+
+        .message-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .message-text {
+            background: #f7f7f7;
+            padding: 12px 16px;
+            border-radius: 8px;
+            line-height: 1.5;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .message.user .message-text {
+            background: #10a37f;
+            color: white;
+        }
+
+        .message-sources {
+            font-size: 12px;
+            color: #666;
+            padding: 0 16px;
+        }
+
+        .source-link {
+            color: #10a37f;
+            text-decoration: none;
+            cursor: pointer;
+            transition: text-decoration 0.2s;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+        }
+
+        .acronym-info {
+            background: #f0f7ff;
+            border-left: 3px solid #10a37f;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin: 8px 0;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .input-area {
+            padding: 20px 24px;
+            border-top: 1px solid #d1d5db;
+            background: #ffffff;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            max-height: 120px;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #10a37f;
+            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.1);
+        }
+
+        .send-btn {
+            padding: 8px 16px;
+            background: #10a37f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 80px;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #0d8a6f;
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #10a37f;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .language-info {
+            font-size: 11px;
+            color: #999;
+            padding: 4px 12px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .reference-section {
+            margin-top: 12px;
+        }
+
+        .reference-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .reference-item {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .reference-item-title {
+            color: #333;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .reference-item-url {
+            color: #10a37f;
+            text-decoration: none;
+            word-break: break-all;
+            font-size: 11px;
+        }
+
+        .reference-item-url:hover {
+            text-decoration: underline;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function ChatApp() {
+            const [language, setLanguage] = useState('english');
+            const [messages, setMessages] = useState([]);
+            const [input, setInput] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [chatHistory, setChatHistory] = useState([]);
+            const [currentChatId, setCurrentChatId] = useState(null);
+            const messagesEndRef = useRef(null);
+
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            };
+
+            useEffect(() => {
+                scrollToBottom();
+            }, [messages]);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('chatHistory');
+                if (saved) {
+                    setChatHistory(JSON.parse(saved));
+                }
+            }, []);
+
+            const startNewChat = () => {
+                const newChatId = Date.now();
+                setCurrentChatId(newChatId);
+                setMessages([]);
+                setInput('');
+            };
+
+            const loadChat = (chatId) => {
+                const chat = chatHistory.find(c => c.id === chatId);
+                if (chat) {
+                    setCurrentChatId(chatId);
+                    setMessages(chat.messages);
+                    setLanguage(chat.language);
+                }
+            };
+
+            const saveChat = (msgs, lang) => {
+                if (!currentChatId || msgs.length === 0) return;
+                
+                const title = msgs[0]?.text?.substring(0, 30) || 'New Chat';
+                const updatedHistory = chatHistory.filter(c => c.id !== currentChatId);
+                const newChat = {
+                    id: currentChatId,
+                    title,
+                    messages: msgs,
+                    language: lang,
+                    timestamp: new Date().toLocaleString()
+                };
+                const updated = [newChat, ...updatedHistory].slice(0, 20);
+                setChatHistory(updated);
+                localStorage.setItem('chatHistory', JSON.stringify(updated));
+            };
+
+            const sendMessage = async () => {
+                if (!input.trim()) return;
+                if (!currentChatId) startNewChat();
+
+                const userMessage = { role: 'user', text: input };
+                const newMessages = [...messages, userMessage];
+                setMessages(newMessages);
+                setInput('');
+                setIsLoading(true);
+
+                try {
+                    const response = await fetch(`http://127.0.0.1:8000/api/query?q=${encodeURIComponent(input)}`);
+                    const data = await response.json();
+
+                    const assistantMessage = {
+                        role: 'assistant',
+                        text: data.answer,
+                        language: data.language,
+                        acronyms: data.acronyms_detected || [],
+                        sources: data.sources || []
+                    };
+                    
+                    const finalMessages = [...newMessages, assistantMessage];
+                    setMessages(finalMessages);
+                    saveChat(finalMessages, language);
+                } catch (error) {
+                    const errorMessage = {
+                        role: 'assistant',
+                        text: 'Unable to connect to the server. Please try again.'
+                    };
+                    setMessages([...newMessages, errorMessage]);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            };
+
+            useEffect(() => {
+                if (currentChatId && messages.length > 0) {
+                    saveChat(messages, language);
+                }
+            }, [language]);
+
+            const chatTitle = language === 'marathi' 
+                ? 'महाराष्ट्र गृहनिर्माण संस्था सहायक'
+                : 'Government Housing Society Assistant';
+
+            return (
+                <div className="main-container">
+                    <div className="sidebar">
+                        <div className="sidebar-header">
+                            <button className="new-chat-btn" onClick={startNewChat}>
+                                {language === 'marathi' ? 'नवीन संभाषण' : 'New Chat'}
+                            </button>
+                        </div>
+                        <div className="chat-history">
+                            {chatHistory.map(chat => (
+                                <button
+                                    key={chat.id}
+                                    className={`chat-item ${currentChatId === chat.id ? 'active' : ''}`}
+                                    onClick={() => loadChat(chat.id)}
+                                    title={chat.title}
+                                >
+                                    {chat.title}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="sidebar-footer">
+                            {language === 'marathi' ? 'संभाषण इतिहास' : 'Chat History'}
+                        </div>
+                    </div>
+
+                    <div className="chat-container">
+                        <div className="chat-header">
+                            <div className="chat-header-title">{chatTitle}</div>
+                            <div className="language-toggle">
+                                <button
+                                    className={`lang-btn ${language === 'english' ? 'active' : ''}`}
+                                    onClick={() => setLanguage('english')}
+                                >
+                                    English
+                                </button>
+                                <button
+                                    className={`lang-btn ${language === 'marathi' ? 'active' : ''}`}
+                                    onClick={() => setLanguage('marathi')}
+                                >
+                                    मराठी
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="messages-container">
+                            {messages.length === 0 ? (
+                                <div className="empty-state">
+                                    <h2>{language === 'marathi' ? 'नमस्कार' : 'Hello'}</h2>
+                                    <p>
+                                        {language === 'marathi'
+                                            ? 'महाराष्ट्र सहकारी गृहनिर्माण संस्था कायद्यांबद्दल विचारा'
+                                            : 'Ask about Maharashtra Cooperative Housing Society laws and regulations'}
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    {messages.map((msg, idx) => (
+                                        <div key={idx} className={`message ${msg.role}`}>
+                                            <div className="message-avatar">
+                                                {msg.role === 'user' ? 'U' : 'A'}
+                                            </div>
+                                            <div className="message-content">
+                                                <div className="message-text">{msg.text}</div>
+                                                {msg.language && (
+                                                    <div className="language-info">
+                                                        {msg.language === 'English' ? 'Response in English' : 'उत्तर मराठीत'}
+                                                    </div>
+                                                )}
+                                                {msg.acronyms && msg.acronyms.length > 0 && (
+                                                    <div className="acronym-info">
+                                                        <strong>{language === 'marathi' ? 'संक्षेप:' : 'Acronyms:'}</strong>
+                                                        {msg.acronyms.map((acr, i) => (
+                                                            <div key={i}>{acr}</div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {msg.sources && msg.sources.length > 0 && (
+                                                    <div className="reference-section">
+                                                        <div className="reference-title">
+                                                            {language === 'marathi' ? 'संदर्भ' : 'References'}
+                                                        </div>
+                                                        {msg.sources.map((source, i) => (
+                                                            <div key={i} className="reference-item">
+                                                                <div className="reference-item-title">{source.title}</div>
+                                                                <a 
+                                                                    href={source.url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="reference-item-url"
+                                                                >
+                                                                    {source.url}
+                                                                </a>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="message assistant">
+                                            <div className="message-avatar">A</div>
+                                            <div className="loading-spinner"></div>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </>
+                            )}
+                        </div>
+
+                        <div className="input-area">
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder={language === 'marathi' 
+                                        ? 'आपला प्रश्न लिहा...'
+                                        : 'Ask your question...'}
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    className="send-btn"
+                                    onClick={sendMessage}
+                                    disabled={isLoading || !input.trim()}
+                                >
+                                    {isLoading ? 'Sending...' : 'Send'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ChatApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

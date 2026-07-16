@@ -1,0 +1,197 @@
+import os
+
+CONFIG = {
+
+    "storage": {
+        "dataset_directory": "dataset",
+        "metadata_directory": "metadata",
+        "use_category_storage": True,
+    },
+
+    "aws": {
+        "enabled": True,
+
+        # SECURITY NOTE: do not hardcode real credentials here.
+        # These read from environment variables so nothing sensitive
+        # ever gets committed to source control. Set them via:
+        #   export AWS_ACCESS_KEY_ID=...
+        #   export AWS_SECRET_ACCESS_KEY=...
+        #   export AWS_REGION=ap-south-1
+        # On EC2/ECS/Lambda, leave these unset and attach an IAM role —
+        # boto3 will pick up role credentials automatically.
+        "aws_access_key_id": os.environ.get("AWS_ACCESS_KEY_ID"),
+        "aws_secret_access_key": os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        "aws_region": os.environ.get("AWS_REGION"),
+
+        "s3_bucket_name": os.environ.get("S3_BUCKET_NAME", "society-compliance-copilot"),
+        "s3_prefix": "dataset",
+
+        "max_retries": 3,
+        "retry_backoff_seconds": 2.0,
+    },
+
+    "scraping": {
+        "timeout": 60,
+        "retries": 3,
+        "delay": 1,
+    },
+
+    "gr_portal": {
+        "base_url": "https://gr.maharashtra.gov.in/1145/Government-Resolutions",
+        "max_pages": 50,
+        "delay": 2,
+        "relevance_threshold": 0.0,
+        "positive_keywords": [
+            {"word": "housing", "weight": 2.0},
+            {"word": "society", "weight": 2.0},
+            {"word": "cooperative", "weight": 2.0},
+            {"word": "co-operative", "weight": 2.0},
+            {"word": "redevelopment", "weight": 2.0},
+            {"word": "conveyance", "weight": 2.0},
+            {"word": "deemed", "weight": 2.0},
+            {"word": "audit", "weight": 1.5},
+            {"word": "election", "weight": 1.5},
+            {"word": "committee", "weight": 1.5},
+            {"word": "registrar", "weight": 1.5},
+            {"word": "member", "weight": 1.0},
+            {"word": "bye law", "weight": 1.0},
+            {"word": "agm", "weight": 1.0},
+            {"word": "annual return", "weight": 1.0},
+            {"word": "गृहनिर्माण", "weight": 2.0},
+            {"word": "सहकार", "weight": 2.0},
+            {"word": "सहकारी", "weight": 2.0},
+            {"word": "संस्था", "weight": 2.0},
+            {"word": "पुनर्विकास", "weight": 2.0},
+            {"word": "अभिहस्तांतरण", "weight": 2.0},
+            {"word": "निबंधक", "weight": 1.5},
+            {"word": "लेखापरीक्षण", "weight": 1.0},
+            {"word": "वार्षिक सभा", "weight": 1.0},
+        ],
+        "negative_keywords": [
+            {"word": "agriculture", "weight": -10.0},
+            {"word": "agricultural", "weight": -10.0},
+            {"word": "education", "weight": -10.0},
+            {"word": "school", "weight": -10.0},
+            {"word": "college", "weight": -10.0},
+            {"word": "university", "weight": -10.0},
+            {"word": "health", "weight": -10.0},
+            {"word": "hospital", "weight": -10.0},
+            {"word": "medical", "weight": -10.0},
+            {"word": "transport", "weight": -10.0},
+            {"word": "road", "weight": -10.0},
+            {"word": "highway", "weight": -10.0},
+            {"word": "police", "weight": -10.0},
+            {"word": "tourism", "weight": -10.0},
+            {"word": "forest", "weight": -10.0},
+            {"word": "promotion", "weight": -10.0},
+            {"word": "seniority", "weight": -10.0},
+            {"word": "transfer", "weight": -10.0},
+            {"word": "employee", "weight": -10.0},
+            {"word": "staff", "weight": -10.0},
+            {"word": "recruitment", "weight": -10.0},
+            {"word": "tender", "weight": -10.0},
+            {"word": "budget", "weight": -10.0},
+            {"word": "कृषी", "weight": -10.0},
+            {"word": "शिक्षण", "weight": -10.0},
+            {"word": "आरोग्य", "weight": -10.0},
+            {"word": "पोलीस", "weight": -10.0},
+        ],
+    },
+
+    "cooperation": {
+        "base_url": "https://mahasahakar.maharashtra.gov.in",
+        "documents_url": "https://mahasahakar.maharashtra.gov.in/en/documents/",
+        "max_pages": 50,
+        "delay": 2,
+    },
+
+    "sahakarayukta": {
+        "base_url": "https://sahakarayukta.maharashtra.gov.in",
+        "max_pages": 50,
+        "delay": 2,
+    },
+
+    "housing": {
+        "base_url": "https://housing.maharashtra.gov.in/en",
+        "documents_url": "https://housing.maharashtra.gov.in/en/document-category/",
+        "max_pages": 50,
+        "delay": 2,
+    },
+
+    "CATEGORY_RULES_FILE": "config/category_rules.json",
+    "CATEGORY_PRIORITY": [
+        "Model_ByeLaws",
+        "Acts",
+        "Rules",
+        "Redevelopment",
+        "Deemed_Conveyance",
+        "Audit",
+        "Election",
+        "Committee",
+        "AGM",
+        "Annual_Return",
+        "Circulars",
+        "Notifications",
+        "Government_Resolutions",
+        "Housing",
+        "Land",
+        "MHADA",
+        "RERA",
+        "Rent_Control",
+        "Slum",
+        "Minutes",
+        "Policies",
+        "Guidelines",
+        "Manuals",
+        "Publications",
+        "Finance",
+        "Forms",
+    ],
+    "MIN_CONFIDENCE": 0.3,
+
+    "keywords": {
+        "include": [
+            "cooperative",
+            "housing",
+            "society",
+            "societies",
+            "bye law",
+            "byelaw",
+            "redevelopment",
+            "deemed conveyance",
+            "audit",
+            "committee",
+            "agm",
+            "annual return",
+            "election",
+            "membership",
+            "registrar",
+            "co-operation",
+            "सहकार",
+            "गृहनिर्माण",
+            "सहकारी",
+            "संस्था",
+            "सभासद",
+            "पुनर्विकास",
+            "अधिनियम",
+            "उपनियम",
+            "लेखापरीक्षण",
+            "वार्षिक सभा",
+        ],
+        "exclude": [
+            "agriculture",
+            "health",
+            "tourism",
+            "forest",
+            "education",
+            "industry",
+            "road",
+            "police",
+            "hospital",
+            "school",
+            "food",
+            "revenue",
+        ],
+    },
+
+}

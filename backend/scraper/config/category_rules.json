@@ -1,0 +1,184 @@
+{
+    "Model_ByeLaws": {
+        "document_type": ["Bye-law", "Model Bye-law"],
+        "category": ["Model Bye-laws"],
+        "title_keywords": ["bye-law", "byelaw", "by law", "उपविधी", "model bye-laws", "आदर्श उपविधी"],
+        "department": [],
+        "source_website": []
+    },
+    "Acts": {
+        "document_type": ["Act", "Amendment Act"],
+        "category": ["Acts", "Acts & Rules"],
+        "title_keywords": ["act", "अधिनियम", "legislation", "amendment act"],
+        "department": [],
+        "source_website": []
+    },
+    "Rules": {
+        "document_type": ["Rule", "Regulation"],
+        "category": ["Rules"],
+        "title_keywords": ["rule", "rules", "नियम", "regulation", "नियमावली"],
+        "department": [],
+        "source_website": []
+    },
+    "Redevelopment": {
+        "document_type": ["Redevelopment"],
+        "category": ["Redevelopment"],
+        "title_keywords": ["redevelopment", "पुनर्विकास", "reconstruction", "rebuilding"],
+        "department": [],
+        "source_website": []
+    },
+    "Deemed_Conveyance": {
+        "document_type": ["Conveyance"],
+        "category": ["Deemed Conveyance"],
+        "title_keywords": ["deemed conveyance", "अभिहस्तांतरण", "conveyance", "transfer of title"],
+        "department": [],
+        "source_website": []
+    },
+    "Audit": {
+        "document_type": ["Audit"],
+        "category": ["Audit"],
+        "title_keywords": ["audit", "लेखापरीक्षण", "auditor"],
+        "department": [],
+        "source_website": []
+    },
+    "Election": {
+        "document_type": ["Election"],
+        "category": ["Election"],
+        "title_keywords": ["election", "निवडणूक", "poll"],
+        "department": [],
+        "source_website": []
+    },
+    "Committee": {
+        "document_type": ["Committee"],
+        "category": ["Committee"],
+        "title_keywords": ["committee", "समिती"],
+        "department": [],
+        "source_website": []
+    },
+    "AGM": {
+        "document_type": ["AGM"],
+        "category": ["AGM"],
+        "title_keywords": ["agm", "annual general meeting", "वार्षिक सभा"],
+        "department": [],
+        "source_website": []
+    },
+    "Annual_Return": {
+        "document_type": ["Annual Return"],
+        "category": ["Annual Return"],
+        "title_keywords": ["annual return", "वार्षिक अहवाल"],
+        "department": [],
+        "source_website": []
+    },
+    "Circulars": {
+        "document_type": ["Circular"],
+        "category": ["Circular"],
+        "title_keywords": ["circular", "परिपत्रक"],
+        "department": [],
+        "source_website": []
+    },
+    "Notifications": {
+        "document_type": ["Notification"],
+        "category": ["Notification"],
+        "title_keywords": ["notification", "अधिसूचना"],
+        "department": [],
+        "source_website": []
+    },
+    "Government_Resolutions": {
+        "document_type": ["Government Resolution"],
+        "category": ["Government Resolution"],
+        "title_keywords": ["government resolution", "gr", "शासन निर्णय"],
+        "department": [],
+        "source_website": ["gr.maharashtra.gov.in"]
+    },
+    "Housing": {
+        "document_type": ["Housing"],
+        "category": ["Housing"],
+        "title_keywords": ["housing", "गृहनिर्माण"],
+        "department": ["Housing Department"],
+        "source_website": ["housing.maharashtra.gov.in"]
+    },
+    "Land": {
+        "document_type": ["Land"],
+        "category": ["Land"],
+        "title_keywords": ["land", "जमीन", "allotment"],
+        "department": [],
+        "source_website": []
+    },
+    "MHADA": {
+        "document_type": ["MHADA"],
+        "category": ["MHADA"],
+        "title_keywords": ["mhada", "महाडा"],
+        "department": [],
+        "source_website": []
+    },
+    "RERA": {
+        "document_type": ["RERA"],
+        "category": ["RERA"],
+        "title_keywords": ["rera", "real estate"],
+        "department": [],
+        "source_website": []
+    },
+    "Rent_Control": {
+        "document_type": ["Rent Control"],
+        "category": ["Rent Control"],
+        "title_keywords": ["rent control", "भाडे"],
+        "department": [],
+        "source_website": []
+    },
+    "Slum": {
+        "document_type": ["Slum"],
+        "category": ["Slum"],
+        "title_keywords": ["slum", "झोपडपट्टी"],
+        "department": [],
+        "source_website": []
+    },
+    "Minutes": {
+        "document_type": ["Minutes"],
+        "category": ["Minutes of Meeting"],
+        "title_keywords": ["minutes", "मिनिटे", "mom"],
+        "department": [],
+        "source_website": []
+    },
+    "Policies": {
+        "document_type": ["Policy"],
+        "category": ["Policy"],
+        "title_keywords": ["policy", "धोरण", "scheme"],
+        "department": [],
+        "source_website": []
+    },
+    "Guidelines": {
+        "document_type": ["Guideline"],
+        "category": ["Guidelines"],
+        "title_keywords": ["guideline", "guidelines", "मार्गदर्शक"],
+        "department": [],
+        "source_website": []
+    },
+    "Manuals": {
+        "document_type": ["Manual"],
+        "category": ["Manual"],
+        "title_keywords": ["manual", "नियमावली"],
+        "department": [],
+        "source_website": []
+    },
+    "Publications": {
+        "document_type": ["Publication"],
+        "category": ["Publication"],
+        "title_keywords": ["publication", "प्रकाशन", "report"],
+        "department": [],
+        "source_website": []
+    },
+    "Finance": {
+        "document_type": ["Finance"],
+        "category": ["Finance"],
+        "title_keywords": ["finance", "वित्त", "budget"],
+        "department": [],
+        "source_website": []
+    },
+    "Forms": {
+        "document_type": ["Form"],
+        "category": ["Forms"],
+        "title_keywords": ["form", "फॉर्म"],
+        "department": [],
+        "source_website": []
+    }
+}

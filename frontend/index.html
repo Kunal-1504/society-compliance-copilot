@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Society Compliance Copilot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <button class="new-chat-btn" id="newChatBtn">＋ New chat</button>
+        <div class="sidebar-label">Recent chats</div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <button class="calendar-toggle" id="calendarToggle">📅 Compliance calendar</button>
+        <div class="brand-mark">
+          <div class="brand-glyph">🏛️</div>
+          <div>
+            <p class="brand-name">Society Compliance Copilot</p>
+            <p class="brand-sub">Maharashtra housing society helpdesk</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <button class="sidebar-scrim" id="sidebarScrim" aria-label="Close sidebar"></button>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn" id="menuToggle" aria-label="Open menu">☰</button>
+        <div class="topbar-title">
+          <div class="topbar-title-mr">सहकारी नियम सहायक</div>
+          <div class="topbar-title-en">Society Compliance Copilot</div>
+        </div>
+        <div class="topbar-status ok" id="apiStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">online</span>
+        </div>
+      </header>
+
+      <section class="chat-scroll" id="chatScroll">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-glyph">🏛️</div>
+          <h1>Ask in Marathi, English, or Romanized Marathi</h1>
+          <p>Get plain-language answers, source references, and compliance reminders for housing societies.</p>
+          <div class="suggestion-grid" id="suggestionGrid">
+            <button class="suggestion-chip" data-q="What is the process for AGM notice under the MCS Act?">What is the process for AGM notice under the MCS Act?</button>
+            <button class="suggestion-chip" data-q="अधिकार समितीच्या निवडीचे नियम काय आहेत?">अधिकार समितीच्या निवडीचे नियम काय आहेत?</button>
+            <button class="suggestion-chip" data-q="How to draft a society resolution for redevelopment?">How to draft a society resolution for redevelopment?</button>
+            <button class="suggestion-chip" data-q="Aapli society chi annual return kyun submit karavi lagte?">Aapli society chi annual return kyun submit karavi lagte?</button>
+          </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+      </section>
+
+      <section class="calendar-panel" id="calendarPanel" hidden>
+        <div class="calendar-header">
+          <h3>Compliance calendar</h3>
+          <p>Useful reminders for the next few months.</p>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+      <section class="composer-wrap">
+        <form class="composer" id="composerForm">
+          <textarea class="entry-input" id="queryInput" rows="1" placeholder="Type your question in English, Marathi, or Romanized Marathi..."></textarea>
+          <button class="send-btn" id="sendBtn" type="submit" aria-label="Send">➤</button>
+        </form>
+        <div class="composer-note">Answers stay grounded in the available sources shown underneath each reply.</div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

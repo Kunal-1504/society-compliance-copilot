@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background-light text-slate-800 antialiased transition-colors duration-300;
+  }
+  .dark body {
+    @apply bg-background-dark text-slate-100;
+  }
+}
+
+@layer components {
+  /* Glassmorphism utility classes */
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+  .dark .glass {
+    @apply bg-slate-800/60 backdrop-blur-md border border-slate-700/50 shadow-none;
+  }
+  
+  .glass-panel {
+    @apply bg-white/90 backdrop-blur-xl border border-slate-200/50 shadow-xl;
+  }
+  .dark .glass-panel {
+    @apply bg-slate-900/90 backdrop-blur-xl border border-slate-800 shadow-xl;
+  }
+  
+  /* Form elements */
+  .input-field {
+    @apply w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all;
+  }
+  .dark .input-field {
+    @apply bg-slate-800/80 border-slate-700 text-slate-100 placeholder-slate-400 focus:ring-brand-500/50;
+  }
+  
+  .btn-primary {
+    @apply px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-all flex items-center justify-center gap-2;
+  }
+  .dark .btn-secondary {
+    @apply bg-slate-800 hover:bg-slate-700 text-slate-200;
+  }
+  .btn-icon {
+    @apply p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors;
+  }
+  .dark .btn-icon {
+    @apply text-slate-400 hover:text-slate-100 hover:bg-slate-800;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-700;
+  }
+}
